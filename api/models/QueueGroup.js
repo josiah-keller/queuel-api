@@ -14,6 +14,9 @@ module.exports = {
     group: {
       model: "group",
     },
+    next: {
+      model: "queuegroup",
+    },
   },
 };
 
