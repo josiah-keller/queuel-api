@@ -21,5 +21,6 @@
  */
 
 module.exports.routes = {
-  "GET /queues": "QueueController.getQueues",
+  "GET /queue": "QueueController.getQueues",
+  "POST /queue": "QueueController.addQueue",
 };
