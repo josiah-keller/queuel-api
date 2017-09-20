@@ -1,11 +1,12 @@
-/**
- * QueueController
- *
- * @description :: Server-side logic for managing queues
- * @help        :: See http://sailsjs.org/#!/documentation/concepts/Controllers
- */
-
 module.exports = {
-	
+	getQueues: (req, res) => {
+    Queue.find()
+    .then(queues => {
+      return res.json(queues);
+    })
+    .catch(err => {
+      return res.negotiate(err);
+    });
+  }
 };
 
