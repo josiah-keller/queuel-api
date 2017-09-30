@@ -1,6 +1,6 @@
 module.exports = {
 	getQueues: (req, res) => {
-    Queue.find()
+    Queue.find().populate("groups")
     .then(queues => {
       if (req.isSocket) {
         Queue.subscribe(req, _.pluck(queues, "id"));
@@ -21,6 +21,7 @@ module.exports = {
     };
     Queue.create(newQueue)
     .then(queue => {
+      queue.groups = [];
       Queue.publishCreate(queue);
       return res.json(queue);
     })
