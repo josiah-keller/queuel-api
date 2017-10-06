@@ -28,5 +28,16 @@ module.exports = {
     .catch(err => {
       return res.negotiate(err);
     });
-  }
+  },
+  deleteQueue: (req, res) => {
+    let id = req.param("id");
+    Queue.destroy({ id })
+    .then(queues => {
+      Queue.publishDestroy(id);
+      return res.json(queues);
+    })
+    .catch(err => {
+      return res.negotiate(err);
+    });
+  },
 };

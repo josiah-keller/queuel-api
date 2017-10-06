@@ -23,4 +23,5 @@
 module.exports.routes = {
   "GET /queue": "QueueController.getQueues",
   "POST /queue": "QueueController.addQueue",
+  "DELETE /queue/:id": "QueueController.deleteQueue",
 };
