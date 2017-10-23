@@ -1,9 +1,11 @@
+const _ = require("lodash");
+
 module.exports = {
 	getQueues: (req, res) => {
     Queue.find().populate("groups")
     .then(queues => {
       if (req.isSocket) {
-        Queue.subscribe(req, _.pluck(queues, "id"));
+        Queue.subscribe(req, _.map(queues, "id"));
         Queue.watch(req);
       }
       return res.json(queues);

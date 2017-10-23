@@ -1,4 +1,5 @@
 const _ = require("lodash");
+const POSITION_INCREMENT = 100;
 
 module.exports = {
   attributes: {
@@ -37,5 +38,26 @@ module.exports = {
       });
     });
   },
+
+  nextPositionIndex: (queue) => {
+    let queueId = _.isString(queue) ? queue : queue.id;
+    if (! queueId) return Promise.reject(new Error("No queue specifeid"));
+
+    return new Promise((resolve, reject) => {
+      QueueGroup.find({
+        queue: queueId,
+      })
+      .sort("position DESC")
+      .then(queueGroups => {
+        if (! queueGroups || queueGroups.length === 0) {
+          return resolve(POSITION_INCREMENT);
+        }
+        resolve(queueGroups[0].position + POSITION_INCREMENT);
+      })
+      .catch(err => {
+        reject(err);
+      });
+    });
+  }
 };
 
