@@ -10,6 +10,7 @@ module.exports = {
         QueueGroup.subscribe(req, _.map(queueGroups, "id"));
         QueueGroup.watch(req);
         Group.subscribe(req, _.map(_.map(queueGroups, "group"), "id"));
+        Group.watch(req);
       }
       res.json(queueGroups);
     });
@@ -44,7 +45,9 @@ module.exports = {
             })
             .then(queueGroup => {
               nextQueueGroup = queueGroup.id;
+              queueGroup.group = group; // Populate group
               QueueGroup.publishCreate(queueGroup);
+              Queue.publishAdd(queueId, "groups", queueGroup);
               callback(null);
             })
             .catch(err => {
