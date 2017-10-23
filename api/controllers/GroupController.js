@@ -64,7 +64,30 @@ module.exports = {
       });
     }).catch(err => {
       return res.negotiate(err);
-    })
+    });
+  },
+  deleteGroup: (req, res) => {
+    let id = req.param("id");
+    Group.findOne(id)
+    .then(group => {
+      if (! group) {
+        return res.notFound();
+      }
+      Group.destroy({ id })
+      .then(groups => {
+        Group.publishDestroy(id);
+        QueueGroup.destroy({ group: id })
+        .then(queueGroups => {
+          _.forEach(queueGroups, queueGroup => {
+            QueueGroup.publishDestroy(queueGroup.id);
+            Queue.publishRemove(queueGroup.queue, "groups", queueGroup.id);
+          });
+        });
+      })
+      .catch(err => {
+        return res.negotiate(err);
+      });
+    });
   }
 };
 
