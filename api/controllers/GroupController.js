@@ -82,12 +82,31 @@ module.exports = {
             QueueGroup.publishDestroy(queueGroup.id);
             Queue.publishRemove(queueGroup.queue, "groups", queueGroup.id);
           });
+          res.json(groups);
         });
       })
       .catch(err => {
         return res.negotiate(err);
       });
     });
-  }
+  },
+  updateGroup: (req, res) => {
+    let id = req.param("id"),
+      name = req.param("name"),
+      phoneNumber = req.param("phoneNumber"),
+      groupSize = req.param("groupSize");
+    Group.update({ id }, {
+      name,
+      phoneNumber,
+      groupSize,
+    })
+    .then(groups => {
+      Group.publishUpdate(groups[0].id, groups[0]);
+      res.json(groups);
+    })
+    .catch(err => {
+      return res.negotiate(err);
+    });
+  },
 };
 

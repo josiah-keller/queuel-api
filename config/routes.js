@@ -28,4 +28,5 @@ module.exports.routes = {
   "GET /queue/:queueId/group": "GroupController.getGroupsByQueue",
   "POST /group": "GroupController.addGroup",
   "DELETE /group/:id": "GroupController.deleteGroup",
+  "POST /group/:id": "GroupController.updateGroup",
 };
