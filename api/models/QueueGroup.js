@@ -6,7 +6,8 @@ module.exports = {
       defaultsTo: false,
     },
     position: {
-      type: "integer",
+      type: "float",
+      required: true,
     },
     queue: {
       model: "queue",

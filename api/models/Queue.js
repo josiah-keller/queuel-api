@@ -1,5 +1,5 @@
 const _ = require("lodash");
-const POSITION_INCREMENT = 100;
+const POSITION_INCREMENT = 1000;
 
 module.exports = {
   attributes: {
@@ -32,6 +32,39 @@ module.exports = {
           return resolve(null);
         }
         resolve(queueGroups[n]);
+      })
+      .catch(err => {
+        reject(err);
+      });
+    });
+  },
+
+  calculateNewPosition: (queue, oldIndex, newIndex) => {
+    let queueId = _.isString(queue) ? queue : queue.id;
+    if (! queueId) return Promise.reject(new Error("No queue specified"));
+
+    return new Promise((resolve, reject) => {
+      QueueGroup.find({
+        queue: queueId,
+      })
+      .sort("position ASC")
+      .then(queueGroups => {
+        if (! queueGroups || queueGroups.length < 2) {
+          return resolve(POSITION_INCREMENT);
+        }
+        // Simulate the array move in order to get the indices right
+        let pulled = _.pullAt(queueGroups, oldIndex);
+        queueGroups.splice(newIndex, 0, pulled[0]);
+        if (newIndex === 0) {
+          return resolve(queueGroups[1].position / 2);
+        } else if (newIndex === queueGroups.length - 1) {
+          return resolve(queueGroups[queueGroups.length - 2].position + POSITION_INCREMENT);
+        } else {
+          return resolve(
+            ((queueGroups[newIndex + 1].position - queueGroups[newIndex - 1].position) / 2)
+              + queueGroups[newIndex - 1].position
+          );
+        }
       })
       .catch(err => {
         reject(err);
