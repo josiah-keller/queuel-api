@@ -25,6 +25,8 @@ module.exports.routes = {
   "POST /queue": "QueueController.addQueue",
   "DELETE /queue/:id": "QueueController.deleteQueue",
   "POST /queue/:queueId/reorder": "QueueController.reorderGroup",
+  "POST /queue/:queueId/advance": "QueueController.advanceQueue",
+  "POST /queue/:queueId/reverse": "QueueController.reverseQueue",
 
   "GET /queue/:queueId/group": "GroupController.getGroupsByQueue",
   "POST /group": "GroupController.addGroup",

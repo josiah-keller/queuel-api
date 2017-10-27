@@ -1,6 +1,10 @@
 module.exports = {
 
   attributes: {
+    completed: {
+      type: "boolean",
+      defaultsTo: false,
+    },
     pending: {
       type: "boolean",
       defaultsTo: false,
