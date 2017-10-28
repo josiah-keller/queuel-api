@@ -91,6 +91,30 @@ module.exports = {
         reject(err);
       });
     });
+  },
+
+  incrementQueue: (queue, direction) => {
+    let queueId = _.isString(queue) ? queue : queue.id;
+    return new Promise((resolve, reject) => {
+      // Want top uncompleted if advancing, bottom completed if reversing
+      QueueGroup.find({ queue: queueId, completed: (direction !== 1) })
+      .sort(direction === 1 ? "position ASC" : "position DESC")
+      .then(queueGroups => {
+        if (queueGroups.length === 0) {
+          return resolve([]);
+        }
+        QueueGroup.update({
+          id: queueGroups[0].id
+        }, {
+          completed: (direction === 1) // Mark completed=true if advancing, unmark if reversing
+        })
+        .then(updatedQueueGroups => {
+          return resolve(updatedQueueGroups);
+        })
+        .catch(reject);
+      })
+      .catch(reject);
+    });
   }
 };
 

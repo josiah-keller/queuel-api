@@ -85,49 +85,38 @@ module.exports = {
   },
   advanceQueue: (req, res) => {
     let queueId = req.param("queueId");
-    QueueGroup.find({ queue: queueId, completed: false })
-    .sort("position ASC")
-    .then(queueGroups => {
-      if (queueGroups.length === 0) {
+    Queue.incrementQueue(queueId, 1)
+    .then(updatedQueueGroups => {
+      if (updatedQueueGroups.length === 0) {
         return res.json([]);
       }
-      QueueGroup.update({
-        id: queueGroups[0].id
-      }, {
-        completed: true
-      })
-      .then(updatedQueueGroups => {
-        QueueGroup.publishUpdate(updatedQueueGroups[0].id, {
-          id: updatedQueueGroups[0].id,
-          queue: updatedQueueGroups[0].queue,
-          completed: updatedQueueGroups[0].completed,
-        });
-        return res.json(updatedQueueGroups[0]);
+      QueueGroup.publishUpdate(updatedQueueGroups[0].id, {
+        id: updatedQueueGroups[0].id,
+        queue: updatedQueueGroups[0].queue,
+        completed: updatedQueueGroups[0].completed,
       });
+      return res.json(updatedQueueGroups[0]);
+    })
+    .catch(err => {
+      return res.negotiate(err);
     });
   },
   reverseQueue: (req, res) => {
-    console.log("REVERSE");
     let queueId = req.param("queueId");
-    QueueGroup.find({ queue: queueId, completed: true })
-    .sort("position DESC")
-    .then(queueGroups => {
-      if (queueGroups.length === 0) {
+    Queue.incrementQueue(queueId, -1)
+    .then(updatedQueueGroups => {
+      if (updatedQueueGroups.length === 0) {
         return res.json([]);
       }
-      QueueGroup.update({
-        id: queueGroups[0].id
-      }, {
-        completed: false
-      })
-      .then(updatedQueueGroups => {
-        QueueGroup.publishUpdate(updatedQueueGroups[0].id, {
-          id: updatedQueueGroups[0].id,
-          queue: updatedQueueGroups[0].queue,
-          completed: updatedQueueGroups[0].completed,
-        });
-        return res.json(updatedQueueGroups[0]);
+      QueueGroup.publishUpdate(updatedQueueGroups[0].id, {
+        id: updatedQueueGroups[0].id,
+        queue: updatedQueueGroups[0].queue,
+        completed: updatedQueueGroups[0].completed,
       });
+      return res.json(updatedQueueGroups[0]);
     })
-  }
+    .catch(err => {
+      return res.negotiate(err);
+    });
+  },
 };
