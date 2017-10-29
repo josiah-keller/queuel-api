@@ -36,9 +36,11 @@ module.exports = {
           if (! queue) {
             return callback(null);
           }
-          Queue.nextPositionIndex(queue).then(positionIndex => {
+          // 1st (last in queueIds) one not pending, all subsequent ones are pending
+          let isPending = (i !== queueIds.length - 1);
+          Queue.nextPositionIndex(queue, isPending).then(positionIndex => {
             QueueGroup.create({
-              pending: (i !== queueIds.length - 1), // 1st (last in queueIds) one not pending, all subsequent ones are pending
+              pending: isPending,
               position: positionIndex,
               queue: queueId,
               group: group.id,
