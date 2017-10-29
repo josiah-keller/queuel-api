@@ -42,6 +42,24 @@ module.exports = {
       return res.negotiate(err);
     });
   },
+  updateQueue: (req, res) => {
+    let id = req.param("id"),
+      name = req.param("name"),
+      status = req.param("status");
+    Queue.update({
+      id,
+    }, {
+      name,
+      status,
+    })
+    .then(queues => {
+      Queue.publishUpdate(queues[0].id, queues[0]);
+      res.json(queues);
+    })
+    .catch(err => {
+      return res.negotiate(err);
+    });
+  },
   reorderGroup: (req, res) => {
     let queueId = req.param("queueId"),
       queueGroupId = req.param("queueGroupId"),
@@ -127,39 +145,53 @@ module.exports = {
         return res.json([]);
       }
       let nextQueueGroup = updatedQueueGroups[0];
-      QueueGroup.resolvePlaceholder(nextQueueGroup.id.toString())
-      .then(placeholder => {
-        QueueGroup.publishUpdate(nextQueueGroup.id, {
-          id: nextQueueGroup.id,
-          queue: nextQueueGroup.queue,
-          completed: nextQueueGroup.completed,
+      Queue.update({
+        id: queueId,
+      }, {
+        status: "inProgress",
+      })
+      .then(updatedQueue => {
+        Queue.publishUpdate(queueId, {
+          id: queueId,
+          status: "inProgress",
         });
-        if (placeholder) {
-          QueueGroup.publishUpdate(placeholder.id, {
-            id: placeholder.id,
-            queue: placeholder.queue,
-            pending: false,
+        QueueGroup.resolvePlaceholder(nextQueueGroup.id.toString())
+        .then(placeholder => {
+          QueueGroup.publishUpdate(nextQueueGroup.id, {
+            id: nextQueueGroup.id,
+            queue: nextQueueGroup.queue,
+            completed: nextQueueGroup.completed,
           });
-        }
-        Group.findOne(nextQueueGroup.group)
-        .then(group => {
-          if (! group) {
-            sails.log.warning(`Couldn't send text because group ${nextQueueGroup.group} not found`);
-            return res.json([placeholder]);
+          if (placeholder) {
+            QueueGroup.publishUpdate(placeholder.id, {
+              id: placeholder.id,
+              queue: placeholder.queue,
+              pending: false,
+            });
           }
-          Queue.findOne(queueId)
-          .then(queue => {
-            if (! queue) {
-              sails.log.warning(`Couldn't send text because queue ${queueId} not found`);
+          Group.findOne(nextQueueGroup.group)
+          .then(group => {
+            if (! group) {
+              sails.log.warning(`Couldn't send text because group ${nextQueueGroup.group} not found`);
               return res.json([placeholder]);
             }
-            TextService
-            .sendText("currentGroup", { groupName: group.name, queueName: queue.name }, group.phoneNumber)
-            .then(() => {
-              return res.json([placeholder]);
+            Queue.findOne(queueId)
+            .then(queue => {
+              if (! queue) {
+                sails.log.warning(`Couldn't send text because queue ${queueId} not found`);
+                return res.json([placeholder]);
+              }
+              TextService
+              .sendText("currentGroup", { groupName: group.name, queueName: queue.name }, group.phoneNumber)
+              .then(() => {
+                return res.json([placeholder]);
+              })
+              .catch(err => {
+                sails.log.warning(`Couldn't send text because ${err}`);
+              });
             })
             .catch(err => {
-              sails.log.warning(`Couldn't send text because ${err}`);
+              return res.negotiate(err);
             });
           })
           .catch(err => {
