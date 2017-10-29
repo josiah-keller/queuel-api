@@ -1,4 +1,5 @@
 const _ = require("lodash");
+const async = require("async");
 
 module.exports = {
 	getGroupsByQueue: (req, res) => {
