@@ -16,8 +16,8 @@ module.exports = {
     });
   },
   addGroup: (req, res) => {
-    if (! req.param("name") || ! req.param("phoneNumber") || ! req.param("groupSize") || ! req.param("queueOrder")) {
-      return req.badRequest();
+    if (! req.param("name") || ! req.param("groupSize") || ! req.param("queueOrder")) {
+      return res.badRequest();
     }
     let name = req.param("name");
     let phoneNumber = req.param("phoneNumber");
