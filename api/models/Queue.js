@@ -98,7 +98,7 @@ module.exports = {
         })
         .then(concreteLength => {
           let index = 0;
-          while (queueGroups[index].pending) index++;
+          while (index < queueGroups.length && queueGroups[index].pending) index++;
   
           // Send to back if:
           //  - No placeholders in the way (index === 0)
