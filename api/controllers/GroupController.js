@@ -102,11 +102,11 @@ module.exports = {
       name = req.param("name"),
       phoneNumber = req.param("phoneNumber"),
       groupSize = req.param("groupSize");
-    Group.update({ id }, {
-      name,
-      phoneNumber,
-      groupSize,
-    })
+    let newGroup = {};
+    if (name) newGroup.name = name;
+    if (phoneNumber) newGroup.phoneNumber = phoneNumber;
+    if (groupSize) newGroup.groupSize = groupSize;
+    Group.update({ id }, newGroup)
     .then(groups => {
       Group.publishUpdate(groups[0].id, groups[0]);
       res.json(groups);

@@ -48,13 +48,13 @@ module.exports = {
       name = req.param("name"),
       status = req.param("status"),
       backgroundImageUrl = req.param("backgroundImageUrl");
+    let newQueue = {};
+    if (name) newQueue.name = name;
+    if (status) newQueue.status = status;
+    if (backgroundImageUrl) newQueue.backgroundImageUrl = backgroundImageUrl;
     Queue.update({
       id,
-    }, {
-      name,
-      status,
-      backgroundImageUrl,
-    })
+    }, newQueue)
     .then(queues => {
       Queue.publishUpdate(queues[0].id, queues[0]);
       res.json(queues);
