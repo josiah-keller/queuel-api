@@ -20,6 +20,7 @@ module.exports = {
     }
     let newQueue = {
       name: req.param("name"),
+      backgroundImageUrl: req.param("backgroundImageUrl"),
     };
     Queue.create(newQueue)
     .then(queue => {
@@ -45,12 +46,14 @@ module.exports = {
   updateQueue: (req, res) => {
     let id = req.param("id"),
       name = req.param("name"),
-      status = req.param("status");
+      status = req.param("status"),
+      backgroundImageUrl = req.param("backgroundImageUrl");
     Queue.update({
       id,
     }, {
       name,
       status,
+      backgroundImageUrl,
     })
     .then(queues => {
       Queue.publishUpdate(queues[0].id, queues[0]);

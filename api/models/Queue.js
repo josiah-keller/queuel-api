@@ -12,6 +12,10 @@ module.exports = {
       enum: ["open", "inProgress", "blocked"],
       defaultsTo: "open",
     },
+    backgroundImageUrl: {
+      type: "string",
+      defaultsTo: null,
+    },
     groups:  {
       collection: "QueueGroup",
       via: "queue",
