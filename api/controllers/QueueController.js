@@ -147,7 +147,7 @@ module.exports = {
       if (updatedQueueGroups.length === 0) {
         return res.json([]);
       }
-      let nextQueueGroup = updatedQueueGroups[0];
+      let currentQueueGroup = updatedQueueGroups[0];
       Queue.update({
         id: queueId,
       }, {
@@ -158,12 +158,12 @@ module.exports = {
           id: queueId,
           status: "inProgress",
         });
-        QueueGroup.resolvePlaceholder(nextQueueGroup.id.toString())
+        QueueGroup.resolvePlaceholder(currentQueueGroup.id.toString())
         .then(placeholder => {
-          QueueGroup.publishUpdate(nextQueueGroup.id, {
-            id: nextQueueGroup.id,
-            queue: nextQueueGroup.queue,
-            completed: nextQueueGroup.completed,
+          QueueGroup.publishUpdate(currentQueueGroup.id, {
+            id: currentQueueGroup.id,
+            queue: currentQueueGroup.queue,
+            completed: currentQueueGroup.completed,
           });
           if (placeholder) {
             QueueGroup.publishUpdate(placeholder.id, {
@@ -172,10 +172,21 @@ module.exports = {
               pending: false,
             });
           }
-          Group.findOne(nextQueueGroup.group)
-          .then(group => {
-            if (! group) {
-              sails.log.warning(`Couldn't send text because group ${nextQueueGroup.group} not found`);
+          QueueGroup.find({
+            queue: queueId,
+            completed: false,
+          })
+          .populate("group")
+          .sort("position ASC")
+          .then(queueGroups => {
+            if (queueGroups.length < 2) {
+              sails.log.warning(`No one to send text to`);
+              return res.json([placeholder]);
+            }
+            let nextQueueGroup = queueGroups[1]; // Send text to next group, not current
+            // Bail if pending
+            if (nextQueueGroup.pending) {
+              sails.log.warning(`Not texting placeholder`);
               return res.json([placeholder]);
             }
             Queue.findOne(queueId)
@@ -185,7 +196,10 @@ module.exports = {
                 return res.json([placeholder]);
               }
               TextService
-              .sendText("currentGroup", { groupName: group.name, queueName: queue.name }, group.phoneNumber)
+              .sendText("nextGroup", {
+                groupName: nextQueueGroup.group.name,
+                queueName: queue.name
+              }, nextQueueGroup.group.phoneNumber)
               .then(() => {
                 return res.json([placeholder]);
               })

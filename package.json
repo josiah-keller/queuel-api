@@ -23,7 +23,8 @@
     "lodash": "^4.17.4",
     "rc": "1.0.1",
     "sails": "~0.12.13",
-    "sails-disk": "~0.10.9"
+    "sails-disk": "~0.10.9",
+    "twilio": "^3.9.1"
   },
   "scripts": {
     "debug": "node debug app.js",
