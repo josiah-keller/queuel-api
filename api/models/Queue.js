@@ -84,38 +84,43 @@ module.exports = {
     pending = !! pending;
 
     return new Promise((resolve, reject) => {
-      QueueGroup.find({
+      return QueueGroup.find({
         queue: queueId,
+        completed: false,
       })
-      .sort("position DESC")
+      .sort("position ASC")
       .then(queueGroups => {
-        if (! queueGroups || queueGroups.length === 0) {
+        let len = queueGroups.length;
+        if (! queueGroups || len === 0) {
           return resolve(POSITION_INCREMENT);
         }
-        QueueGroup.count({
-          queue: queueId,
-          completed: false,
-        })
-        .then(concreteLength => {
-          let index = 0;
-          while (index < queueGroups.length && queueGroups[index].pending) index++;
-  
-          // Send to back if:
-          //  - No placeholders in the way (index === 0)
-          //  - The new group is pending
-          //  - The "concrete length" (ie, groups actually still in line, not completed) is big enough that
-          //    there are no placeholders up at the top
-          if (index === 0 || pending || concreteLength >= 3) {
-            resolve(queueGroups[0].position + POSITION_INCREMENT);
+
+        // Send to back if:
+        //  - No placeholders at the top, OR
+        //  - The new group is a placeholder, OR
+        if ((! queueGroups[0].pending && (len < 2 || !queueGroups[1].pending)) || pending) {
+          return resolve(queueGroups[len - 1].position + POSITION_INCREMENT);
+        } else {
+          let index;
+          if (queueGroups[0].pending) {
+            index = 0;
+          } else if (len > 0 && queueGroups[1].pending) {
+            index = 1;
           } else {
-            // Handle case where queue is very sparse and placeholders have made it to the very top
-            // by pushing the placeholders down
-            resolve(
-              ((queueGroups[index - 1].position - queueGroups[index].position) / 2) + queueGroups[index].position
-            );
+            // Handle case where there is only one group that is not a placeholder
+            return resolve(queueGroups[0].position + POSITION_INCREMENT);
           }
-        })
-        .catch(reject);
+
+          // Handle case where queue is sparse and placeholders have made it to the very top
+          // Push the placeholders down
+          let basePos;
+          if (index === 0) {
+            basePos = 0;
+          } else {
+            basePos = queueGroups[index - 1].position;
+          }
+          return resolve(((queueGroups[index].position - basePos) / 2) + basePos);
+        }
       })
       .catch(reject);
     });
