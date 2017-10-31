@@ -6,4 +6,7 @@ module.exports = {
     }
     return res.json({ authenticated: false });
   },
+  checkAuth: (req, res) => {
+    return res.json({ authenticated: !! req.session.authenticated });
+  }
 }
