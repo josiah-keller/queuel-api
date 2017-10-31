@@ -21,6 +21,8 @@
  */
 
 module.exports.routes = {
+  "POST /auth": "AuthController.authenticate",
+
   "GET /queue": "QueueController.getQueues",
   "POST /queue": "QueueController.addQueue",
   "DELETE /queue/:id": "QueueController.deleteQueue",
