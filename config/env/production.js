@@ -22,11 +22,7 @@ module.exports = {
     migrate: 'safe',
   },
 
-  /***************************************************************************
-   * Set the port in the production environment to 80                        *
-   ***************************************************************************/
-
-  port: 80,
+  port: process.env.port,
 
   /***************************************************************************
    * Set the log level in production environment to "silent"                 *
