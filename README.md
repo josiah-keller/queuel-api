@@ -1,6 +1,6 @@
 # Queuel Backend
 
-This is the backend API for the Queuel application.  For more information, visit the [frontent repo](https://github.com/josiah-keller/queuel).
+This is the backend API for the Queuel application.  For more information, visit the [frontend repo](https://github.com/josiah-keller/queuel).
 
 ## Deployment
 
