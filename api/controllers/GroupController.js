@@ -115,5 +115,49 @@ module.exports = {
       return res.negotiate(err);
     });
   },
+  nextQueue: (req, res) => {
+    let id = req.param("id");
+    QueueGroup.find({
+      group: id,
+      pending: false,
+      completed: false,
+    })
+    .then(queueGroups => {
+      if (queueGroups.length > 1) {
+        return res.serverError("More than one queueGroup for that group");
+      }
+      let currentQueueGroup = queueGroups[0];
+      QueueGroup.update({ id: currentQueueGroup.id }, {
+        completed: true,
+      })
+      .then(updatedQueueGroup => {
+        QueueGroup.resolvePlaceholder(currentQueueGroup.id.toString())
+        .then(placeholder => {
+          QueueGroup.publishUpdate(currentQueueGroup.id, {
+            id: currentQueueGroup.id,
+            queue: currentQueueGroup.queue,
+            completed: true,
+          });
+          if (placeholder) {
+            QueueGroup.publishUpdate(placeholder.id, {
+              id: placeholder.id,
+              queue: placeholder.queue,
+              pending: false,
+            });
+          }
+          return res.json([placeholder]);
+        })
+        .catch(err => {
+          return res.negotiate(err);
+        });
+      })
+      .catch(err => {
+        return res.negotiate(err);
+      });
+    })
+    .catch(err => {
+      return res.negotiate(err);
+    });
+  }
 };
 
