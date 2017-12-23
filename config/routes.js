@@ -37,4 +37,5 @@ module.exports.routes = {
   "POST /group": "GroupController.addGroup",
   "DELETE /group/:id": "GroupController.deleteGroup",
   "POST /group/:id": "GroupController.updateGroup",
+  "POST /group/:id/nextQueue": "GroupController.nextQueue",
 };
