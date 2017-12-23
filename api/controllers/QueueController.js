@@ -180,19 +180,19 @@ module.exports = {
           .sort("position ASC")
           .then(queueGroups => {
             if (queueGroups.length < 2) {
-              sails.log.warning(`No one to send text to`);
+              sails.log.warn(`No one to send text to`);
               return res.json([placeholder]);
             }
             let nextQueueGroup = queueGroups[1]; // Send text to next group, not current
             // Bail if pending
             if (nextQueueGroup.pending) {
-              sails.log.warning(`Not texting placeholder`);
+              sails.log.warn(`Not texting placeholder`);
               return res.json([placeholder]);
             }
             Queue.findOne(queueId)
             .then(queue => {
               if (! queue) {
-                sails.log.warning(`Couldn't send text because queue ${queueId} not found`);
+                sails.log.warn(`Couldn't send text because queue ${queueId} not found`);
                 return res.json([placeholder]);
               }
               TextService
@@ -204,7 +204,7 @@ module.exports = {
                 return res.json([placeholder]);
               })
               .catch(err => {
-                sails.log.warning(`Couldn't send text because ${err}`);
+                sails.log.warn(`Couldn't send text because ${err}`);
               });
             })
             .catch(err => {

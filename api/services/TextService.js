@@ -2,7 +2,13 @@ const _ = require("lodash");
 const Twilio = require("twilio");
 const twilioCredentials = require("./twilio-credentials");
 
-let client = new Twilio(twilioCredentials.sid, twilioCredentials.authToken);
+let haveAllCredentials = twilioCredentials.sid && twilioCredentials.authToken && twilioCredentials.phoneNumber;
+
+let client = haveAllCredentials ? new Twilio(twilioCredentials.sid, twilioCredentials.authToken) : null;
+
+if (! haveAllCredentials) {
+  sails.log.warn("Missing Twilio credentials - no texts will be sent");
+}
 
 module.exports = {
   messages: {
@@ -21,19 +27,23 @@ module.exports = {
     let message = TextService.messages[messageTemplateName](messageVars);
     console.log(`Sending message to ${phoneNumber}:\n${message}`);
 
-    return new Promise((resolve, reject) => {
-      client.messages.create({
-        to: "1" + phoneNumber.replace(new RegExp("-", "g"), ""),
-        from: twilioCredentials.phoneNumber,
-        body: message,
-      })
-      .then(message => {
-        return resolve(message);
-      })
-      .catch(err => {
-        console.log(`Couldn't send message to ${phoneNumber}, error follows`, err);
-        return reject(err);
+    if (! client) {
+      return Promise.resolve(message);
+    } else {
+      return new Promise((resolve, reject) => {
+        client.messages.create({
+          to: "1" + phoneNumber.replace(new RegExp("-", "g"), ""),
+          from: twilioCredentials.phoneNumber,
+          body: message,
+        })
+        .then(message => {
+          return resolve(message);
+        })
+        .catch(err => {
+          console.log(`Couldn't send message to ${phoneNumber}, error follows`, err);
+          return reject(err);
+        });
       });
-    });
+    }
   }
 };
