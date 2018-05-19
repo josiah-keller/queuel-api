@@ -126,6 +126,9 @@ module.exports = {
       if (queueGroups.length > 1) {
         return res.serverError("More than one queueGroup for that group");
       }
+      if (queueGroups.length === 0) {
+        return res.notFound("Group doesn't exist, or is not concrete or is completed");
+      }
       let currentQueueGroup = queueGroups[0];
       QueueGroup.update({ id: currentQueueGroup.id }, {
         completed: true,
