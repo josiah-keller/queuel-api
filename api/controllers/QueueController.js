@@ -21,6 +21,7 @@ module.exports = {
     let newQueue = {
       name: req.param("name"),
       backgroundImageUrl: req.param("backgroundImageUrl"),
+      targetBatchSize: parseInt(req.param("targetBatchSize"), 10),
     };
     Queue.create(newQueue)
     .then(queue => {
