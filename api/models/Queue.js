@@ -16,9 +16,15 @@ module.exports = {
       type: "string",
       defaultsTo: null,
     },
-    groups:  {
+    groups: {
       collection: "QueueGroup",
       via: "queue",
+    },
+    currentBatch: {
+      model: "batch",
+    },
+    targetBatchSize: {
+      type: "integer",
     },
   },
 

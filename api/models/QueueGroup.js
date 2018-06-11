@@ -18,6 +18,9 @@ module.exports = {
     queue: {
       model: "queue",
     },
+    batch: {
+      model: "batch",
+    },
     group: {
       model: "group",
     },
@@ -55,4 +58,3 @@ module.exports = {
     });
   }
 };
-
