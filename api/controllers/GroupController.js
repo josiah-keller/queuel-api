@@ -64,7 +64,7 @@ module.exports = {
         });
       }, (err) => {
         if (err) {
-          res.negotiate(err);
+          return res.negotiate(err);
         }
         Group.publishCreate(group);
         res.json(group);
