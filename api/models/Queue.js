@@ -23,6 +23,9 @@ module.exports = {
     currentBatch: {
       model: "batch",
     },
+    nextBatch: {
+      model: "batch",
+    },
     targetBatchSize: {
       type: "integer",
     },

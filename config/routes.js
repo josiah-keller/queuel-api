@@ -38,4 +38,10 @@ module.exports.routes = {
   "DELETE /group/:id": "GroupController.deleteGroup",
   "POST /group/:id": "GroupController.updateGroup",
   "POST /group/:id/nextQueue": "GroupController.nextQueue",
+
+  "GET /queue/:queueId/batch": "BatchController.getBatchesByQueue",
+  "POST /queue/:queueId/batch": "BatchController.newBatchForQueue",
+  "GET /batch/:id/groups": "BatchController.getQueueGroupsForBatch",
+  "POST /batch/:batchId/groups": "BatchController.addQueueGroupToBatch",
+  "DELETE /batch/:batchId/groups/:queueGroupId": "BatchController.removeQueueGroupFromBatch",
 };

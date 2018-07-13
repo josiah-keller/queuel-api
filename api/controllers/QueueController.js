@@ -2,7 +2,7 @@ const _ = require("lodash");
 
 module.exports = {
 	getQueues: (req, res) => {
-    Queue.find().populate("groups")
+    Queue.find().populate("groups").populate("currentBatch").populate("nextBatch")
     .then(queues => {
       if (req.isSocket) {
         Queue.subscribe(req, _.map(queues, "id"));
@@ -14,7 +14,7 @@ module.exports = {
       return res.negotiate(err);
     });
   },
-  addQueue: (req, res) => {
+  addQueue: async (req, res) => {
     if (! req.param("name")) {
       return res.badRequest();
     }
@@ -23,15 +23,23 @@ module.exports = {
       backgroundImageUrl: req.param("backgroundImageUrl"),
       targetBatchSize: parseInt(req.param("targetBatchSize"), 10),
     };
-    Queue.create(newQueue)
-    .then(queue => {
+    try {
+      let queue = await Queue.create(newQueue);
+
+      let currentBatch = await Batch.create({ queue: queue.id });
+      let nextBatch = await Batch.create({ queue: queue.id });
+
+      queue = await Queue.update({ id: queue.id }, { 
+        currentBatch: currentBatch.id,
+        nextBatch: nextBatch.id
+      });
+
       queue.groups = [];
       Queue.publishCreate(queue);
       return res.json(queue);
-    })
-    .catch(err => {
+    } catch(err) {
       return res.negotiate(err);
-    });
+    }
   },
   deleteQueue: (req, res) => {
     let id = req.param("id");
@@ -48,11 +56,13 @@ module.exports = {
     let id = req.param("id"),
       name = req.param("name"),
       status = req.param("status"),
-      backgroundImageUrl = req.param("backgroundImageUrl");
+      backgroundImageUrl = req.param("backgroundImageUrl"),
+      targetBatchSize = parseInt(req.param("targetBatchSize"), 10);
     let newQueue = {};
     if (name) newQueue.name = name;
     if (status) newQueue.status = status;
     if (backgroundImageUrl) newQueue.backgroundImageUrl = backgroundImageUrl;
+    if (_.isInteger(targetBatchSize)) newQueue.targetBatchSize = targetBatchSize;
     Queue.update({
       id,
     }, newQueue)

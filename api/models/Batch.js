@@ -8,4 +8,12 @@ module.exports = {
       via: "batch",
     },
   },
+
+  addQueueGroupToBatch: async function(batchId, queueGroupId) {
+    return (await QueueGroup.update({ id: queueGroupId, }, { batch: batchId, }))[0];
+  },
+
+  removeQueueGroupFromBatch: async function(batchId, queueGroupId) {
+    return (await QueueGroup.update({ id: queueGroupId, }, { batch: null, }))[0];
+  },
 };
