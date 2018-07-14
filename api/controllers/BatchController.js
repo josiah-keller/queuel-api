@@ -67,6 +67,10 @@ module.exports = {
         return res.badRequest("Batch and QueueGroup must belong to same queue");
       }
 
+      if (queueGroup.pending || queueGroup.completed) {
+        return res.badRequest("Can't batch a pending or completed QueueGroup");
+      }
+
       let updatedQueueGroup = await Batch.addQueueGroupToBatch(batchId, queueGroupId);
       updatedQueueGroup.group = await Group.findOne({ id: updatedQueueGroup.group });
       QueueGroup.publishUpdate(updatedQueueGroup.id, {
