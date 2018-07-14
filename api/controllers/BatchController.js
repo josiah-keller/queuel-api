@@ -110,4 +110,51 @@ module.exports = {
       return res.negotiate(err);
     }
   },
+  autoPopulateBatch: async (req, res) => {
+    try {
+      let id = req.param("id");
+      
+      let batch = await Batch.findOne({ id }).populate("queue");
+      let targetBatchSize = batch.queue.targetBatchSize;
+
+      let currentQueueGroups = await QueueGroup.find({ batch: id }).populate("group");
+      let currentSize = currentQueueGroups.reduce((size, queueGroup) => {
+        return size + queueGroup.group.groupSize;
+      }, 0);
+
+      let queueGroupsPool = await QueueGroup.find({
+        queue: batch.queue.id,
+        completed: false,
+        pending: false,
+      }).populate("group").sort("position ASC");
+
+      let groupsToAdd = [];
+
+      for (let i=0; i<queueGroupsPool.length; i++) {
+        if (currentSize >= targetBatchSize) break;
+
+        if (!! queueGroupsPool[i].batch) continue;
+        if (currentSize + queueGroupsPool[i].group.groupSize > targetBatchSize) continue;
+
+        currentSize += queueGroupsPool[i].group.groupSize;
+        groupsToAdd.push(queueGroupsPool[i]);
+      }
+
+      await Promise.all(groupsToAdd.map(queueGroup => {
+        return Batch.addQueueGroupToBatch(id, queueGroup.id).then(updatedQueueGroup => {
+          QueueGroup.publishUpdate(updatedQueueGroup.id, {
+            id: updatedQueueGroup.id,
+            queue: updatedQueueGroup.queue,
+            batch: id,
+          });
+          updatedQueueGroup.group = queueGroup.group;
+          Batch.publishAdd(id, "groups", updatedQueueGroup, null, { noReverse: true });
+        });
+      }));
+
+      return res.json(groupsToAdd);
+    } catch(err) {
+      return res.negotiate(err);
+    }
+  },
 };

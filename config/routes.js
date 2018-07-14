@@ -44,4 +44,5 @@ module.exports.routes = {
   "GET /batch/:id/groups": "BatchController.getQueueGroupsForBatch",
   "POST /batch/:batchId/groups": "BatchController.addQueueGroupToBatch",
   "DELETE /batch/:batchId/groups/:queueGroupId": "BatchController.removeQueueGroupFromBatch",
+  "POST /batch/:id/populate": "BatchController.autoPopulateBatch",
 };
