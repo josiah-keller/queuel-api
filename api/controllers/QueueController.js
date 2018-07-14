@@ -115,42 +115,6 @@ module.exports = {
       return res.negotiate(err);
     });
   },
-  advanceQueue: (req, res) => {
-    let queueId = req.param("queueId");
-    Queue.incrementQueue(queueId, 1)
-    .then(updatedQueueGroups => {
-      if (updatedQueueGroups.length === 0) {
-        return res.json([]);
-      }
-      QueueGroup.publishUpdate(updatedQueueGroups[0].id, {
-        id: updatedQueueGroups[0].id,
-        queue: updatedQueueGroups[0].queue,
-        completed: updatedQueueGroups[0].completed,
-      });
-      return res.json(updatedQueueGroups[0]);
-    })
-    .catch(err => {
-      return res.negotiate(err);
-    });
-  },
-  reverseQueue: (req, res) => {
-    let queueId = req.param("queueId");
-    Queue.incrementQueue(queueId, -1)
-    .then(updatedQueueGroups => {
-      if (updatedQueueGroups.length === 0) {
-        return res.json([]);
-      }
-      QueueGroup.publishUpdate(updatedQueueGroups[0].id, {
-        id: updatedQueueGroups[0].id,
-        queue: updatedQueueGroups[0].queue,
-        completed: updatedQueueGroups[0].completed,
-      });
-      return res.json(updatedQueueGroups[0]);
-    })
-    .catch(err => {
-      return res.negotiate(err);
-    });
-  },
   nextGroup: (req, res) => {
     let queueId = req.param("queueId");
     Queue.incrementQueue(queueId, 1)
