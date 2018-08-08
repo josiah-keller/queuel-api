@@ -135,89 +135,35 @@ module.exports = {
     });
   },
 
-  incrementQueue: (queue, direction) => {
-    let queueId = _.isString(queue) ? queue : queue.id;
-    return new Promise((resolve, reject) => {
-      QueueGroup.find({
-        queue: queueId,
-        completed: (direction !== 1), // Want top uncompleted if advancing, bottom completed if reversing
+  advanceQueue: async (id) => {
+    let queue = await Queue.findOne({ id, }),
+      currentBatch = await Batch.findOne({ id: queue.currentBatch, }).populate("groups"),
+      promises = [];
+    
+    // Mark all the current batch groups completed
+    promises = promises.concat(currentBatch.groups.map(queueGroup => {
+      return QueueGroup.update({
+        id: queueGroup.id,
+      }, {
+        completed: true,
+      }).toPromise();
+    }));
+
+    // Create a new Up Next batch
+    promises.push(
+      Batch.create({ queue: queue.id }).then(newBatch => {
+        // Move batches into new positions
+        return Queue.update({
+          id: queue.id,
+        }, {
+          currentBatch: queue.nextBatch,
+          nextBatch: newBatch.id,
+        }).toPromise();
       })
-      .sort(direction === 1 ? "position ASC" : "position DESC")
-      .then(queueGroups => {
-        if (queueGroups.length === 0) {
-          return resolve([]);
-        }
-        async.auto({
-          "leapfrog": (callback) => {
-            if (direction === -1) {
-              // No leapfrogging if going backwards
-              return callback(null, null);
-            }
-            QueueGroup.count({
-              queue: queueId,
-              completed: true
-            })
-            .then(completedOffset => {
-              // 0 is current, 1 is next, 2 is what we want to leapfrog over
-              // Must offset actual index to account for completed groups off the top of the queue
-              let index = 2 + completedOffset;
-              if (queueGroups.length >= 4 && queueGroups[2].pending) {
-                // At least 4 groups (current, next, next-to-next + at least one more)
-                // AND next-to-next is a placeholder, so we want to leapfrog it
-                Queue.calculateNewPosition(queueId, index, index + 1)
-                .then(newPosition => {
-                  QueueGroup.update({
-                    id: queueGroups[2].id,
-                  }, {
-                    position: newPosition,
-                  })
-                  .then(updatedQueueGroups => {
-                    QueueGroup.publishUpdate(updatedQueueGroups[0].id, {
-                      id: updatedQueueGroups[0].id,
-                      queue: updatedQueueGroups[0].queue,
-                      position: updatedQueueGroups[0].position,
-                    });
-                    callback(null, updatedQueueGroups);
-                  })
-                  .catch(err => {
-                    return callback(err);
-                  });
-                })
-                .catch(err => {
-                  return callback(err);
-                });
-              } else {
-                // Else, no leapfrogging
-                return callback(null, null);
-              }
-            })
-            .catch(err => {
-              return callback(err);
-            })
-          },
-          "advance": [
-            "leapfrog", (data, callback) => {
-              QueueGroup.update({
-                id: queueGroups[0].id
-              }, {
-                completed: (direction === 1) // Mark completed=true if advancing, unmark if reversing
-              })
-              .then(updatedQueueGroups => {
-                return callback(null, updatedQueueGroups);
-              })
-              .catch(err => {
-                return callback(err);
-              });
-          }],
-        }, (err, results) => {
-          if (err) {
-            return reject(err);
-          }
-          return resolve(results.advance);
-        });
-      })
-      .catch(reject);
-    });
+    );
+  
+    await Promise.all(promises);
+    return currentBatch.groups.map(queueGroup => queueGroup.id);
   }
 };
 

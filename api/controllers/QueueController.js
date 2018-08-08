@@ -67,8 +67,13 @@ module.exports = {
       id,
     }, newQueue)
     .then(queues => {
-      Queue.publishUpdate(queues[0].id, queues[0]);
-      res.json(queues);
+      Queue.findOne({ id: queues[0].id }).populate("groups").populate("currentBatch").populate("nextBatch")
+        .then(updatedQueue => {
+          Queue.publishUpdate(updatedQueue.id, updatedQueue);
+          res.json(queues);
+        }).catch(err => {
+          return res.negotiate(err);
+        });
     })
     .catch(err => {
       return res.negotiate(err);
@@ -115,30 +120,49 @@ module.exports = {
       return res.negotiate(err);
     });
   },
-  nextGroup: (req, res) => {
-    let queueId = req.param("queueId");
-    Queue.incrementQueue(queueId, 1)
-    .then(updatedQueueGroups => {
-      if (updatedQueueGroups.length === 0) {
-        return res.json([]);
-      }
-      let currentQueueGroup = updatedQueueGroups[0];
-      Queue.update({
+  nextBatch: async (req, res) => {
+    try {
+      let queueId = req.param("queueId"),
+        completedQueueGroupIds,
+        queue,
+        promises = [];
+
+      // Advance queue
+      completedQueueGroupIds = await Queue.advanceQueue(queueId);
+
+      queue = await Queue.findOne({ id: queueId }).populate("currentBatch").populate("nextBatch");
+      Batch.publishCreate(queue.nextBatch);
+      Queue.publishUpdate(queue.id, {
+        id: queue.id,
+        currentBatch: queue.currentBatch,
+        nextBatch: queue.nextBatch,
+      });
+
+      // Update queue status
+      promises.push(Queue.update({
         id: queueId,
       }, {
         status: "inProgress",
-      })
-      .then(updatedQueue => {
+      }).then(() => {
         Queue.publishUpdate(queueId, {
           id: queueId,
           status: "inProgress",
         });
-        QueueGroup.resolvePlaceholder(currentQueueGroup.id.toString())
-        .then(placeholder => {
-          QueueGroup.publishUpdate(currentQueueGroup.id, {
-            id: currentQueueGroup.id,
-            queue: currentQueueGroup.queue,
-            completed: currentQueueGroup.completed,
+      }));
+      
+      // If the old current batch was empty (eg, queue was new), no need to do anything else
+      if (completedQueueGroupIds.length === 0) {
+        await Promise.all(promises);
+        return res.json(queue.nextBatch);
+      }
+
+      // Resolve placeholders
+      promises = promises.concat(completedQueueGroupIds.map(id => {
+        return QueueGroup.resolvePlaceholder(id.toString()).then(placeholder => {
+          QueueGroup.publishUpdate(id, {
+            id: id,
+            queue: queue.id,
+            completed: true,
           });
           if (placeholder) {
             QueueGroup.publishUpdate(placeholder.id, {
@@ -147,59 +171,14 @@ module.exports = {
               pending: false,
             });
           }
-          QueueGroup.find({
-            queue: queueId,
-            completed: false,
-          })
-          .populate("group")
-          .sort("position ASC")
-          .then(queueGroups => {
-            if (queueGroups.length < 2) {
-              sails.log.warn(`No one to send text to`);
-              return res.json([placeholder]);
-            }
-            let nextQueueGroup = queueGroups[1]; // Send text to next group, not current
-            // Bail if pending
-            if (nextQueueGroup.pending) {
-              sails.log.warn(`Not texting placeholder`);
-              return res.json([placeholder]);
-            }
-            Queue.findOne(queueId)
-            .then(queue => {
-              if (! queue) {
-                sails.log.warn(`Couldn't send text because queue ${queueId} not found`);
-                return res.json([placeholder]);
-              }
-              TextService
-              .sendText("nextGroup", {
-                groupName: nextQueueGroup.group.name,
-                queueName: queue.name
-              }, nextQueueGroup.group.phoneNumber)
-              .then(() => {
-                return res.json([placeholder]);
-              })
-              .catch(err => {
-                sails.log.warn(`Couldn't send text because ${err}`);
-              });
-            })
-            .catch(err => {
-              return res.negotiate(err);
-            });
-          })
-          .catch(err => {
-            return res.negotiate(err);
-          });
-        })
-        .catch(err => {
-          return res.negotiate(err);
         });
-      })
-      .catch(err => {
-        return res.negotiate(err);
-      });
-    })
-    .catch(err => {
+      }));
+
+      await Promise.all(promises);
+
+      return res.json(queue.nextBatch);
+    } catch(err) {
       return res.negotiate(err);
-    });
+    }
   },
 };

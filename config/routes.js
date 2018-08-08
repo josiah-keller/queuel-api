@@ -29,7 +29,7 @@ module.exports.routes = {
   "DELETE /queue/:id": "QueueController.deleteQueue",
   "POST /queue/:id": "QueueController.updateQueue",
   "POST /queue/:queueId/reorder": "QueueController.reorderGroup",
-  "POST /queue/:queueId/next": "QueueController.nextGroup",
+  "POST /queue/:queueId/next": "QueueController.nextBatch",
 
   "GET /queue/:queueId/group": "GroupController.getGroupsByQueue",
   "POST /group": "GroupController.addGroup",
