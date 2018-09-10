@@ -43,4 +43,7 @@ module.exports.routes = {
   "POST /batch/:batchId/groups": "BatchController.addQueueGroupToBatch",
   "DELETE /batch/:batchId/groups/:queueGroupId": "BatchController.removeQueueGroupFromBatch",
   "POST /batch/:id/populate": "BatchController.autoPopulateBatch",
+  "POST /batch/:id/alert": "BatchController.alertBatch",
+
+  "GET /alerts": "AlertController.subscribeAlerts",
 };

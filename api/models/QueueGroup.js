@@ -27,6 +27,10 @@ module.exports = {
     next: {
       model: "queuegroup",
     },
+    messaged: {
+      type: "boolean",
+      defaultsTo: false,
+    },
   },
 
   resolvePlaceholder: (queueGroup) => {

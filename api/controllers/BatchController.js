@@ -161,4 +161,20 @@ module.exports = {
       return res.negotiate(err);
     }
   },
+  alertBatch: async (req, res) => {
+    try {
+      let batchId = req.param("id"), batch = await Batch.findOne({ id: batchId }).populate("queue"),
+      queueGroups = await QueueGroup.find({ batch: batchId }).populate("group");
+      let newAlert = {
+        title: `Up next in ${batch.queue.name} queue`,
+        content: `${queueGroups.map(queueGroup => queueGroup.group.name).join(',\n')}`
+        + `\nPlease make your way to the ${batch.queue.name} entrance`,
+      };
+      let alert = await Alert.create(newAlert);
+      Alert.publishCreate(alert);
+      return res.json(alert);
+    } catch(err) {
+      return res.negotiate(err);
+    }
+  },
 };
