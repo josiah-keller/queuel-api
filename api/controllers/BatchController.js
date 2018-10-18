@@ -172,6 +172,28 @@ module.exports = {
       };
       let alert = await Alert.create(newAlert);
       Alert.publishCreate(alert);
+
+      let promises = [];
+      queueGroups.forEach(queueGroup => {
+        if (! queueGroup.messaged) {
+          promises.push(
+            TextService.sendText("nextGroup", {
+              queueName: batch.queue.name,
+              groupName: queueGroup.group.name,
+            }, queueGroup.group.phoneNumber)
+            .then(() => {
+              return QueueGroup.update({
+                id: queueGroup.id,
+              }, {
+                messaged: true,
+              }).toPromise();
+            })
+          );
+        }
+      });
+
+      await Promise.all(promises);
+
       return res.json(alert);
     } catch(err) {
       return res.negotiate(err);

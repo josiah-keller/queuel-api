@@ -13,7 +13,7 @@ if (! haveAllCredentials) {
 module.exports = {
   messages: {
     nextGroup: (vars) => {
-      return `${vars.groupName}, you're next in the ${vars.queueName} queue! Please make your way to the entrance.`
+      return `${vars.groupName}, you're next in the ${vars.queueName} queue! Please make your way to the entrance.`;
     },
   },
   sendText: function(messageTemplateName, messageVars, phoneNumber) {
