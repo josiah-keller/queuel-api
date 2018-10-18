@@ -29,13 +29,21 @@ module.exports.routes = {
   "DELETE /queue/:id": "QueueController.deleteQueue",
   "POST /queue/:id": "QueueController.updateQueue",
   "POST /queue/:queueId/reorder": "QueueController.reorderGroup",
-  "POST /queue/:queueId/advance": "QueueController.advanceQueue",
-  "POST /queue/:queueId/reverse": "QueueController.reverseQueue",
-  "POST /queue/:queueId/next": "QueueController.nextGroup",
+  "POST /queue/:queueId/next": "QueueController.nextBatch",
 
   "GET /queue/:queueId/group": "GroupController.getGroupsByQueue",
   "POST /group": "GroupController.addGroup",
   "DELETE /group/:id": "GroupController.deleteGroup",
   "POST /group/:id": "GroupController.updateGroup",
   "POST /group/:id/nextQueue": "GroupController.nextQueue",
+
+  "GET /queue/:queueId/batch": "BatchController.getBatchesByQueue",
+  "POST /queue/:queueId/batch": "BatchController.newBatchForQueue",
+  "GET /batch/:id/groups": "BatchController.getQueueGroupsForBatch",
+  "POST /batch/:batchId/groups": "BatchController.addQueueGroupToBatch",
+  "DELETE /batch/:batchId/groups/:queueGroupId": "BatchController.removeQueueGroupFromBatch",
+  "POST /batch/:id/populate": "BatchController.autoPopulateBatch",
+  "POST /batch/:id/alert": "BatchController.alertBatch",
+
+  "GET /alerts": "AlertController.subscribeAlerts",
 };
