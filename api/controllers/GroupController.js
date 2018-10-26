@@ -161,6 +161,72 @@ module.exports = {
     .catch(err => {
       return res.negotiate(err);
     });
-  }
+  },
+  getMovableQueueGroups: async (req, res) => {
+    let groupId = req.param("id");
+    try {
+      let group = await Group.findOne(groupId);
+      if (! group) {
+        return res.notFound();
+      }
+      let movableQueueGroups = await QueueGroup.find({
+        group: groupId,
+        completed: false,
+        batch: [null, undefined],
+      }).populate("queue");
+      let ordered = [], current = _.find(movableQueueGroups, queueGroup => !queueGroup.pending);
+      while (current) {
+        ordered.push(current);
+        current = _.find(movableQueueGroups, queueGroup => queueGroup.id === current.next);
+      }
+      return res.json(ordered);
+    } catch(err) {
+      return res.negotiate(err);
+    }
+  },
+  removeQueueGroup: async (req, res) => {
+    let groupId = req.param("groupId"), queueGroupId = req.param("queueGroupId");
+    let queueGroups = await QueueGroup.find({ group: groupId });
+    let removedQueueGroup = _.find(queueGroups, queueGroup => queueGroup.id == queueGroupId);
+    let previousQueueGroup = _.find(queueGroups, queueGroup => queueGroup.next == removedQueueGroup.id);
+    let nextQueueGroup = _.find(queueGroups, queueGroup => queueGroup.id == removedQueueGroup.next);
+
+    try {
+      if (! removedQueueGroup.pending) {
+        // If this was a concrete group, then there might be a placeholder that needs to take over
+        let updatedQueueGroup = await QueueGroup.resolvePlaceholder(removedQueueGroup);
+        QueueGroup.publishUpdate(updatedQueueGroup.id, {
+          id: updatedQueueGroup.id,
+          queue: updatedQueueGroup.queue,
+          pending: false,
+        });
+      }
+
+      if (previousQueueGroup) {
+        let newNext = null;
+        if (nextQueueGroup) {
+          newNext = nextQueueGroup.id;
+        }
+        await QueueGroup.update({
+          id: previousQueueGroup.id,
+        }, {
+          next: newNext,
+        });
+        QueueGroup.publishUpdate(previousQueueGroup.id, {
+          id: previousQueueGroup.id,
+          queue: previousQueueGroup.queue,
+          next: newNext,
+        });
+      }
+
+      let destroyedQueueGroup = await QueueGroup.destroy({ id: queueGroupId });
+      QueueGroup.publishDestroy(queueGroupId);
+      Queue.publishRemove(removedQueueGroup.queue, "groups", queueGroupId);
+
+      return res.json(destroyedQueueGroup);
+    } catch(err) {
+      return res.negotiate(err);
+    }
+  },
 };
 
