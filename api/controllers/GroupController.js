@@ -161,6 +161,141 @@ module.exports = {
     .catch(err => {
       return res.negotiate(err);
     });
-  }
+  },
+  getMovableQueueGroups: async (req, res) => {
+    let groupId = req.param("id");
+    try {
+      let group = await Group.findOne(groupId);
+      if (! group) {
+        return res.notFound();
+      }
+      let movableQueueGroups = await QueueGroup.find({
+        group: groupId,
+        completed: false,
+        batch: [null, undefined],
+      }).populate("queue");
+      let ordered = [], current = _.find(movableQueueGroups, queueGroup => !queueGroup.pending);
+      while (current) {
+        ordered.push(current);
+        current = _.find(movableQueueGroups, queueGroup => queueGroup.id === current.next);
+      }
+      return res.json(ordered);
+    } catch(err) {
+      return res.negotiate(err);
+    }
+  },
+  removeQueueGroup: async (req, res) => {
+    let groupId = req.param("groupId"), queueGroupId = req.param("queueGroupId");
+
+    try {
+      let queueGroups = await QueueGroup.find({ group: groupId });
+      let removedQueueGroup = _.find(queueGroups, queueGroup => queueGroup.id == queueGroupId);
+      let previousQueueGroup = _.find(queueGroups, queueGroup => queueGroup.next == removedQueueGroup.id);
+      let nextQueueGroup = _.find(queueGroups, queueGroup => queueGroup.id == removedQueueGroup.next);
+
+      if (removedQueueGroup.batch || removedQueueGroup.completed) {
+        return res.badRequest("That queue group is not removable");
+      }
+      
+      if (! removedQueueGroup.pending) {
+        // If this was a concrete group, then there might be a placeholder that needs to take over
+        let updatedQueueGroup = await QueueGroup.resolvePlaceholder(removedQueueGroup);
+        QueueGroup.publishUpdate(updatedQueueGroup.id, {
+          id: updatedQueueGroup.id,
+          queue: updatedQueueGroup.queue,
+          pending: false,
+        });
+      }
+
+      if (previousQueueGroup) {
+        let newNext = null;
+        if (nextQueueGroup) {
+          newNext = nextQueueGroup.id;
+        }
+        await QueueGroup.update({
+          id: previousQueueGroup.id,
+        }, {
+          next: newNext,
+        });
+        QueueGroup.publishUpdate(previousQueueGroup.id, {
+          id: previousQueueGroup.id,
+          queue: previousQueueGroup.queue,
+          next: newNext,
+        });
+      }
+
+      let destroyedQueueGroup = await QueueGroup.destroy({ id: queueGroupId });
+      QueueGroup.publishDestroy(queueGroupId);
+      Queue.publishRemove(removedQueueGroup.queue, "groups", queueGroupId);
+
+      return res.json(destroyedQueueGroup);
+    } catch(err) {
+      return res.negotiate(err);
+    }
+  },
+  getAddableQueues: async(req, res) => {
+    let groupId = req.param("id");
+
+    try {
+      let existingQueueGroups = await QueueGroup.find({ group: groupId });
+      return res.json(await Queue.find({
+        id: { '!': existingQueueGroups.map(queueGroup => queueGroup.queue) },
+      }));
+    } catch(err) {
+      return res.json(err);
+    }
+  },
+  addQueueGroup: async (req, res) => {
+    let groupId = req.param("groupId").toString(), queueId = req.param("queue").toString();
+
+    try {
+      let targetQueue = await Queue.findOne({ id: queueId });
+      if (! targetQueue) {
+        return res.notFound("Queue doesn't exist");
+      }
+
+      let targetGroup = await Group.findOne({ id: groupId });
+      if (! targetGroup) {
+        return res.notFound("Group doesn't exist");
+      }
+
+      let lastQueueGroup = await QueueGroup.find({
+        group: groupId,
+        completed: false,
+        next: [null, undefined],
+      });
+      if (lastQueueGroup.length !== 1) {
+        return res.serverError("No eligible queueGroup to link to");
+      }
+      lastQueueGroup = lastQueueGroup[0];
+      let newQueueGroup = await QueueGroup.create({
+        pending: true, // has to be true, because it's coming after another
+        position: await Queue.nextPositionIndex(queueId),
+        queue: queueId,
+        group: lastQueueGroup.group,
+        next: null,
+      });
+      await QueueGroup.update({
+        id: lastQueueGroup.id,
+      }, {
+        next: newQueueGroup.id,
+      });
+
+      // Populate the actual queue and group objects to keep the frontend happy
+      newQueueGroup.queue = targetQueue;
+      newQueueGroup.group = targetGroup;
+
+      QueueGroup.publishUpdate(lastQueueGroup.id, {
+        id: lastQueueGroup.id,
+        queue: lastQueueGroup.queue,
+        next: newQueueGroup.id,
+      });
+      QueueGroup.publishCreate(newQueueGroup);
+      Queue.publishAdd(queueId, "groups", newQueueGroup);
+      res.json(newQueueGroup);
+    } catch(err) {
+      return res.negotiate(err);
+    }
+  },
 };
 
