@@ -228,5 +228,69 @@ module.exports = {
       return res.negotiate(err);
     }
   },
+  getAddableQueues: async(req, res) => {
+    let groupId = req.param("id");
+
+    try {
+      let existingQueueGroups = await QueueGroup.find({ group: groupId });
+      return res.json(await Queue.find({
+        id: { '!': existingQueueGroups.map(queueGroup => queueGroup.queue) },
+      }));
+    } catch(err) {
+      return res.json(err);
+    }
+  },
+  addQueueGroup: async (req, res) => {
+    let groupId = req.param("groupId").toString(), queueId = req.param("queue").toString();
+
+    try {
+      let targetQueue = await Queue.findOne({ id: queueId });
+      if (! targetQueue) {
+        return res.notFound("Queue doesn't exist");
+      }
+
+      let targetGroup = await Group.findOne({ id: groupId });
+      if (! targetGroup) {
+        return res.notFound("Group doesn't exist");
+      }
+
+      let lastQueueGroup = await QueueGroup.find({
+        group: groupId,
+        completed: false,
+        next: [null, undefined],
+      });
+      if (lastQueueGroup.length !== 1) {
+        return res.serverError("No eligible queueGroup to link to");
+      }
+      lastQueueGroup = lastQueueGroup[0];
+      let newQueueGroup = await QueueGroup.create({
+        pending: true, // has to be true, because it's coming after another
+        position: await Queue.nextPositionIndex(queueId),
+        queue: queueId,
+        group: lastQueueGroup.group,
+        next: null,
+      });
+      await QueueGroup.update({
+        id: lastQueueGroup.id,
+      }, {
+        next: newQueueGroup.id,
+      });
+
+      // Populate the actual queue and group objects to keep the frontend happy
+      newQueueGroup.queue = targetQueue;
+      newQueueGroup.group = targetGroup;
+
+      QueueGroup.publishUpdate(lastQueueGroup.id, {
+        id: lastQueueGroup.id,
+        queue: lastQueueGroup.queue,
+        next: newQueueGroup.id,
+      });
+      QueueGroup.publishCreate(newQueueGroup);
+      Queue.publishAdd(queueId, "groups", newQueueGroup);
+      res.json(newQueueGroup);
+    } catch(err) {
+      return res.negotiate(err);
+    }
+  },
 };
 

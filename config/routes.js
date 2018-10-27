@@ -37,6 +37,8 @@ module.exports.routes = {
   "POST /group/:id": "GroupController.updateGroup",
   "POST /group/:id/nextQueue": "GroupController.nextQueue",
   "GET /group/:id/movableQueueGroups": "GroupController.getMovableQueueGroups",
+  "GET /group/:id/addableQueues": "GroupController.getAddableQueues",
+  "POST /group/:groupId/queueGroup": "GroupController.addQueueGroup",
   "DELETE /group/:groupId/queueGroup/:queueGroupId": "GroupController.removeQueueGroup",
 
   "GET /queue/:queueId/batch": "BatchController.getBatchesByQueue",
