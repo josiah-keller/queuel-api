@@ -186,12 +186,17 @@ module.exports = {
   },
   removeQueueGroup: async (req, res) => {
     let groupId = req.param("groupId"), queueGroupId = req.param("queueGroupId");
-    let queueGroups = await QueueGroup.find({ group: groupId });
-    let removedQueueGroup = _.find(queueGroups, queueGroup => queueGroup.id == queueGroupId);
-    let previousQueueGroup = _.find(queueGroups, queueGroup => queueGroup.next == removedQueueGroup.id);
-    let nextQueueGroup = _.find(queueGroups, queueGroup => queueGroup.id == removedQueueGroup.next);
 
     try {
+      let queueGroups = await QueueGroup.find({ group: groupId });
+      let removedQueueGroup = _.find(queueGroups, queueGroup => queueGroup.id == queueGroupId);
+      let previousQueueGroup = _.find(queueGroups, queueGroup => queueGroup.next == removedQueueGroup.id);
+      let nextQueueGroup = _.find(queueGroups, queueGroup => queueGroup.id == removedQueueGroup.next);
+
+      if (removedQueueGroup.batch || removedQueueGroup.completed) {
+        return res.badRequest("That queue group is not removable");
+      }
+      
       if (! removedQueueGroup.pending) {
         // If this was a concrete group, then there might be a placeholder that needs to take over
         let updatedQueueGroup = await QueueGroup.resolvePlaceholder(removedQueueGroup);
