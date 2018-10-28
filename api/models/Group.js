@@ -28,13 +28,13 @@ module.exports = {
     return formatPhoneNumber(newValues, cb);
   },
   
-  cantText: async (phoneNumber) => {
+  updateCantText: async (cantText, phoneNumber) => {
     let group = await Group.findOne({ phoneNumber: phoneNumber });
     if (! group) throw new Error("No group by that phone number");
-    await Group.update({ id: group.id }, { cantText: true });
+    await Group.update({ id: group.id }, { cantText });
     Group.publishUpdate(group.id, {
       id: group.id,
-      cantText: true,
+      cantText: cantText,
     });
   },
 

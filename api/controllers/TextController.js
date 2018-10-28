@@ -5,7 +5,16 @@ module.exports = {
 
     if (TextService.matchKeyword("STOP", body)) {
       try {
-        await Group.cantText(from);
+        await Group.updateCantText(true, from);
+        return res.ok();
+      } catch(err) {
+        return res.ok();
+      }
+    }
+
+    if (TextService.matchKeyword("START", body)) {
+      try {
+        await Group.updateCantText(false, from);
         return res.ok();
       } catch(err) {
         return res.ok();
