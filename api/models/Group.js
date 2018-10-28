@@ -22,10 +22,10 @@ module.exports = {
   },
 
   beforeCreate: (newValues, cb) => {
-    return forcePlusOnePrefix(newValues, cb);
+    return formatPhoneNumber(newValues, cb);
   },
   beforeUpdate: (newValues, cb) => {
-    return forcePlusOnePrefix(newValues, cb);
+    return formatPhoneNumber(newValues, cb);
   },
   
   cantText: async (phoneNumber) => {
@@ -65,19 +65,17 @@ module.exports = {
   },
 };
 
-function forcePlusOnePrefix(newValues, cb) {
+function formatPhoneNumber(newValues, cb) {
   // Force phone numbers to have +1 prefix
   // Obviously makes phone numbers US-only
   if (! newValues.phoneNumber) {
     return cb(null);
   }
-  if (newValues.phoneNumber.startsWith("+1")) {
-    return cb(null);
-  }
   if (newValues.phoneNumber.startsWith("1")) {
     newValues.phoneNumber = "+" + newValues.phoneNumber;
-    return cb(null);
+  } else if (! newValues.phoneNumber.startsWith("+")) {
+    newValues.phoneNumber = "+1" + newValues.phoneNumber;
   }
-  newValues.phoneNumber = "+1" + newValues.phoneNumber;
+  newValues.phoneNumber = newValues.phoneNumber.replace(new RegExp("-", "g"), "");
   return cb(null);
 }
