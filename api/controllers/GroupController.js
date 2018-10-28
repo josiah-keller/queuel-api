@@ -67,35 +67,24 @@ module.exports = {
           return res.negotiate(err);
         }
         Group.publishCreate(group);
-        res.json(group);
+        TextService.welcome(group.name, group.phoneNumber).then(() => {
+          res.json(group);
+        }).catch(err => {
+          return res.negotiate(err);
+        });
       });
     }).catch(err => {
       return res.negotiate(err);
     });
   },
-  deleteGroup: (req, res) => {
+  deleteGroup: async (req, res) => {
     let id = req.param("id");
-    Group.findOne(id)
-    .then(group => {
-      if (! group) {
-        return res.notFound();
-      }
-      Group.destroy({ id })
-      .then(groups => {
-        Group.publishDestroy(id);
-        QueueGroup.destroy({ group: id })
-        .then(queueGroups => {
-          _.forEach(queueGroups, queueGroup => {
-            QueueGroup.publishDestroy(queueGroup.id);
-            Queue.publishRemove(queueGroup.queue, "groups", queueGroup.id);
-          });
-          res.json(groups);
-        });
-      })
-      .catch(err => {
-        return res.negotiate(err);
-      });
-    });
+    try {
+      let groups = await Group.deleteGroup(id);
+      return res.json(groups);
+    } catch(err) {
+      return res.negotiate(err);
+    }
   },
   updateGroup: (req, res) => {
     let id = req.param("id"),

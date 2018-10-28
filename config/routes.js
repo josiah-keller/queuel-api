@@ -50,4 +50,6 @@ module.exports.routes = {
   "POST /batch/:id/alert": "BatchController.alertBatch",
 
   "GET /alerts": "AlertController.subscribeAlerts",
+
+  "POST /text": "TextController.receiveText",
 };
