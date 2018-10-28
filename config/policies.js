@@ -25,6 +25,10 @@ module.exports.policies = {
   * access)                                                                  *
   *                                                                          *
   ***************************************************************************/
+  
+  TextController: {
+    '*': true,
+  },
 
   '*': 'sessionAuth',
 
