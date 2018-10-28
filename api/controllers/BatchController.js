@@ -175,7 +175,7 @@ module.exports = {
 
       let promises = [];
       queueGroups.forEach(queueGroup => {
-        if (! queueGroup.messaged) {
+        if (! queueGroup.messaged && ! queueGroup.group.cantText) {
           promises.push(
             TextService.sendText("nextGroup", {
               queueName: batch.queue.name,
