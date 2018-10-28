@@ -19,10 +19,10 @@ module.exports = {
       return `${vars.groupName}, you have subscribed to be notified when it's your turn for the events you signed up for.`;
     },
     disclaimer: (vars) => {
-      return `Standard messaging rates apply. Reply CANCEL to cancel *all* events you signed up for. Reply STOP to unsubscribe.`;
+      return `Standard messaging rates apply. Reply LEAVE to cancel *all* events you signed up for. Reply STOP to unsubscribe.`;
     },
     notMonitored: (vars) => {
-      return `This number is not monitored. Please see the kiosk for any questions. Reply CANCEL to cancel *all* events you signed up for.`;
+      return `This number is not monitored. Please see the kiosk for any questions. Reply LEAVE to cancel *all* events you signed up for.`;
     },
     canceled: (vars) => {
       return `Sorry to see you go, ${vars.groupName}. You've been removed from all queues.`;
@@ -65,4 +65,7 @@ module.exports = {
   matchKeyword: (keyword, message) => {
     return message.toString().trim().toUpperCase() === keyword;
   },
+  matchAnyKeyword: (keywords, message) => {
+    return keywords.some(keyword => TextService.matchKeyword(keyword, message));
+  }
 };
