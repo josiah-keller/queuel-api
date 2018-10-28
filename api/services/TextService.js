@@ -44,7 +44,7 @@ module.exports = {
     } else {
       return new Promise((resolve, reject) => {
         client.messages.create({
-          to: "1" + phoneNumber.replace(new RegExp("-", "g"), ""),
+          to: phoneNumber,
           from: twilioCredentials.phoneNumber,
           body: message,
         })
