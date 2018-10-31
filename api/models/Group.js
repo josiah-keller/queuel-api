@@ -60,7 +60,10 @@ module.exports = {
     if (! group) {
       throw { status: 404, message: "Not Found" };
     }
-    await Group.deleteGroup(group.id);
+    await QueueGroup.destroy({
+      group: group.id,
+      completed: false,
+    });
     return group;
   },
 };
